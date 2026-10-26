@@ -1263,6 +1263,10 @@ public class ControllerHandler implements InputManager.InputDeviceListener, UsbD
             rightStickY |= maxByMagnitude(rightStickY, defaultContext.rightStickY);
         }
 
+        if (soulyTouchpadClicked && controllerNumber == soulyPhysicalController().controllerNumber) {
+            inputMap |= ControllerPacket.TOUCHPAD_FLAG;
+        }
+
         if (originalContext.mouseEmulationActive) {
             int changedMask = inputMap ^  originalContext.mouseEmulationLastInputMap;
 
@@ -2905,6 +2909,86 @@ public class ControllerHandler implements InputManager.InputDeviceListener, UsbD
         return true;
     }
 
+    // Souly experimental: touch surface lives on the phone, but the event belongs
+    // to the SAME controller number as the attached physical gamepad.
+    private volatile boolean soulyTouchpadClicked;
+
+    private GenericControllerContext soulyPhysicalController() {
+        for (int i = 0; i < usbDeviceContexts.size(); i++) {
+            GenericControllerContext c = usbDeviceContexts.valueAt(i);
+            if (c != null) {
+                assignControllerNumberIfNeeded(c);
+                return c;
+            }
+        }
+        for (int i = 0; i < inputDeviceContexts.size(); i++) {
+            InputDeviceContext c = inputDeviceContexts.valueAt(i);
+            if (c != null && c.external) {
+                assignControllerNumberIfNeeded(c);
+                return c;
+            }
+        }
+        return defaultContext;
+    }
+
+    public int getSoulyDs4ControllerIndex() {
+        return soulyPhysicalController().controllerNumber;
+    }
+
+    public boolean sendSoulyDs4Touch(MotionEvent event, int surfaceWidth, int surfaceHeight) {
+        if (surfaceWidth <= 0 || surfaceHeight <= 0) return false;
+        GenericControllerContext target = soulyPhysicalController();
+        byte controller = (byte) target.controllerNumber;
+        int action = event.getActionMasked();
+        if (action == MotionEvent.ACTION_CANCEL) {
+            return conn.sendControllerTouchEvent(controller, MoonBridge.LI_TOUCH_EVENT_CANCEL_ALL,
+                    0, 0, 0, 0) != MoonBridge.LI_ERR_UNSUPPORTED;
+        }
+        byte type;
+        switch (action) {
+            case MotionEvent.ACTION_DOWN:
+            case MotionEvent.ACTION_POINTER_DOWN:
+                type = MoonBridge.LI_TOUCH_EVENT_DOWN; break;
+            case MotionEvent.ACTION_MOVE:
+                type = MoonBridge.LI_TOUCH_EVENT_MOVE; break;
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_POINTER_UP:
+                type = MoonBridge.LI_TOUCH_EVENT_UP; break;
+            default: return false;
+        }
+        int start = action == MotionEvent.ACTION_MOVE ? 0 : event.getActionIndex();
+        int end = action == MotionEvent.ACTION_MOVE ? Math.min(event.getPointerCount(), 2) : start + 1;
+        boolean success = true;
+        for (int i = start; i < end; i++) {
+            float x = Math.max(0f, Math.min(1f, event.getX(i) / surfaceWidth));
+            float y = Math.max(0f, Math.min(1f, event.getY(i) / surfaceHeight));
+            int sensitivity = 100;
+            try {
+                sensitivity = Integer.parseInt(android.preference.PreferenceManager
+                        .getDefaultSharedPreferences(activityContext)
+                        .getString("soultemis_ds4_sensitivity", "100"));
+            } catch (NumberFormatException ignored) { }
+            float multiplier = Math.max(0.5f, Math.min(1.5f, sensitivity / 100f));
+            x = Math.max(0f, Math.min(1f, 0.5f + (x - 0.5f) * multiplier));
+            y = Math.max(0f, Math.min(1f, 0.5f + (y - 0.5f) * multiplier));
+            if (conn.sendControllerTouchEvent(controller, type, event.getPointerId(i),
+                    x, y, 0f) == MoonBridge.LI_ERR_UNSUPPORTED) success = false;
+        }
+        return success;
+    }
+
+    public void cancelSoulyDs4Touch() {
+        GenericControllerContext target = soulyPhysicalController();
+        conn.sendControllerTouchEvent((byte) target.controllerNumber,
+                MoonBridge.LI_TOUCH_EVENT_CANCEL_ALL, 0, 0, 0, 0);
+        setSoulyDs4TouchpadClick(false);
+    }
+
+    public void setSoulyDs4TouchpadClick(boolean pressed) {
+        if (soulyTouchpadClicked == pressed) return;
+        soulyTouchpadClicked = pressed;
+        sendControllerInputPacket(soulyPhysicalController());
+    }
     public void reportOscState(int buttonFlags,
                                short leftStickX, short leftStickY,
                                short rightStickX, short rightStickY,
@@ -3319,6 +3403,9 @@ public class ControllerHandler implements InputManager.InputDeviceListener, UsbD
                 }
             }
 
+            // Virtual phone touchpad is available, even with a touchpad-less GameSir.
+            capabilities |= MoonBridge.LI_CCAP_TOUCHPAD;
+            supportedButtonFlags |= ControllerPacket.TOUCHPAD_FLAG;
             conn.sendControllerArrivalEvent((byte)controllerNumber, getActiveControllerMask(),
                     reportedType, supportedButtonFlags, capabilities);
 
@@ -3425,8 +3512,10 @@ public class ControllerHandler implements InputManager.InputDeviceListener, UsbD
                 });
             }
 
+            // Also cover USB Direct controllers.
+            capabilities |= MoonBridge.LI_CCAP_TOUCHPAD;
             conn.sendControllerArrivalEvent((byte)controllerNumber, getActiveControllerMask(),
-                    type, device.getSupportedButtonFlags(), capabilities);
+                    type, device.getSupportedButtonFlags() | ControllerPacket.TOUCHPAD_FLAG, capabilities);
         }
     }
 }

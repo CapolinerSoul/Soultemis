@@ -140,6 +140,46 @@ public class Game extends Activity implements SurfaceHolder.Callback,
     private ControllerHandler controllerHandler;
     private KeyboardTranslator keyboardTranslator;
     private VirtualController virtualController;
+    private com.limelight.binding.input.virtual_controller.SoulyDs4TouchpadView soulyDs4Touchpad;
+    private com.limelight.binding.input.virtual_controller.SoulyFloatingTouchpadToggle soulyFloatingToggle;
+    private boolean soulyQuickEnabled = true;
+
+    private boolean soulyDs4Mode() {
+        android.content.SharedPreferences p = android.preference.PreferenceManager.getDefaultSharedPreferences(this);
+        return p.getBoolean("soultemis_ds4_enabled", true) &&
+                "ds4".equals(p.getString("soultemis_ds4_controller_mode", "ds4"));
+    }
+
+    private void soulyBuildFloatingToggle() {
+        if (soulyFloatingToggle != null) return;
+        soulyFloatingToggle = new com.limelight.binding.input.virtual_controller.SoulyFloatingTouchpadToggle(this);
+        int buttonSize = Math.round(getResources().getDisplayMetrics().heightPixels * 0.06f);
+        android.widget.FrameLayout.LayoutParams p = new android.widget.FrameLayout.LayoutParams(buttonSize, buttonSize);
+        p.gravity = android.view.Gravity.TOP | android.view.Gravity.LEFT;
+        p.leftMargin = Math.max(0, getResources().getDisplayMetrics().widthPixels - buttonSize -
+                Math.round(18f * getResources().getDisplayMetrics().density));
+        p.topMargin = Math.round(18f * getResources().getDisplayMetrics().density);
+        ((android.widget.FrameLayout) rootView).addView(soulyFloatingToggle, p);
+        soulyFloatingToggle.setToggleAction(() -> {
+            soulyQuickEnabled = !soulyQuickEnabled;
+            soulySyncDs4Panel();
+        });
+        if (virtualController != null) {
+            soulyFloatingToggle.setEditorController(virtualController);
+        }
+    }
+    private void soulySyncDs4Panel() {
+        android.content.SharedPreferences p = android.preference.PreferenceManager.getDefaultSharedPreferences(this);
+        boolean overlayOn = virtualController != null && prefConfig.onscreenController && !isHidingOverlays;
+        boolean ds4 = soulyDs4Mode();
+        if (soulyDs4Touchpad != null) soulyDs4Touchpad.setActive(overlayOn && ds4 && soulyQuickEnabled);
+        if (soulyFloatingToggle != null) {
+            boolean show = overlayOn && ds4 && p.getBoolean("soultemis_ds4_floating_toggle", true);
+            soulyFloatingToggle.setVisibility(show ? android.view.View.VISIBLE : android.view.View.GONE);
+            soulyFloatingToggle.setTouchpadEnabled(soulyQuickEnabled);
+            soulyFloatingToggle.refreshOpacity();
+        }
+    }
 
     private KeyBoardController keyBoardController;
 
@@ -691,6 +731,11 @@ public class Game extends Activity implements SurfaceHolder.Callback,
         virtualController = new VirtualController(controllerHandler, (FrameLayout)rootView, this);
         virtualController.refreshLayout();
         virtualController.show();
+        soulyDs4Touchpad = new com.limelight.binding.input.virtual_controller.SoulyDs4TouchpadView(this, controllerHandler);
+        ((FrameLayout)rootView).addView(soulyDs4Touchpad, soulyDs4Touchpad.createLayoutParams());
+        soulyDs4Touchpad.setEditorController(virtualController);
+        soulyBuildFloatingToggle();
+        soulySyncDs4Panel();
     }
 
     private void initkeyBoardLayoutController(){
@@ -724,6 +769,8 @@ public class Game extends Activity implements SurfaceHolder.Callback,
             return;
         }
         prefConfig.onscreenController= virtualController.switchShowHide() != 0;
+        soulySyncDs4Panel();
+        if (soulyDs4Touchpad != null) soulyDs4Touchpad.setActive(prefConfig.onscreenController);
     }
 
     private void setPreferredOrientationForCurrentDisplay() {
@@ -797,6 +844,7 @@ public class Game extends Activity implements SurfaceHolder.Callback,
                 if (virtualController != null) {
                     virtualController.hide();
                 }
+                if (soulyDs4Touchpad != null) soulyDs4Touchpad.setActive(false);
 
                 if (keyBoardController != null && keyBoardController.shown) {
                     keyBoardController.hide(true);
@@ -825,6 +873,7 @@ public class Game extends Activity implements SurfaceHolder.Callback,
                 if (virtualController != null) {
                     virtualController.show();
                 }
+                if (soulyDs4Touchpad != null) soulyDs4Touchpad.setActive(prefConfig.onscreenController);
 
                 if (keyBoardController != null && keyBoardController.shown) {
                     keyBoardController.show();
@@ -1318,6 +1367,7 @@ public class Game extends Activity implements SurfaceHolder.Callback,
         if (virtualController != null) {
             virtualController.hide();
         }
+        if (soulyDs4Touchpad != null) soulyDs4Touchpad.setActive(false);
         if (keyBoardController != null) {
             keyBoardController.hide();
         }

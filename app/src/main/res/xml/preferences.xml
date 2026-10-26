@@ -827,4 +827,18 @@
             android:title="@string/title_follow_update"
             app:iconSpaceReserved="false" />
     </PreferenceCategory>
+    <!-- Soultemis preferences: the Xbox option controls the local Soultemis overlay only.
+         Apollo's gamepad type must be configured separately on the host. -->
+    <PreferenceCategory android:key="soultemis_preferences" android:title="Soultemis - DS4 Touchpad" app:iconSpaceReserved="false">
+        <CheckBoxPreference android:key="soultemis_ds4_enabled" android:defaultValue="true" android:title="Enable virtual DS4 touchpad" android:summary="Add phone-screen touch contacts to a physical controller" />
+        <ListPreference android:key="soultemis_ds4_controller_mode" android:defaultValue="ds4" android:title="Soultemis controller mode" android:summary="Select DS4 or Xbox locally; Apollo must match this choice" android:entries="@array/soultemis_modes" android:entryValues="@array/soultemis_mode_values" />
+        <CheckBoxPreference android:key="soultemis_ds4_floating_toggle" android:defaultValue="true" android:title="Floating touchpad toggle" android:summary="Show a quick touchpad ON/OFF button during streaming in DS4 mode" />
+        <CheckBoxPreference android:key="soultemis_ds4_tap_click" android:defaultValue="false" android:title="Tap to click" android:summary="A short stationary tap also presses the DS4 touchpad button" />
+        <CheckBoxPreference android:key="soultemis_ds4_long_click" android:defaultValue="false" android:title="Long press to click" android:summary="Holding a stationary finger presses and holds the DS4 touchpad button" />
+        <CheckBoxPreference android:key="soultemis_ds4_separate_click" android:defaultValue="true" android:title="Separate touchpad click button" />
+        <CheckBoxPreference android:key="soultemis_ds4_show_fingers" android:defaultValue="true" android:title="Show finger tracking" />
+        <CheckBoxPreference android:key="soultemis_ds4_diagnostics" android:defaultValue="false" android:title="DS4 input diagnostics" android:summary="Show slot, touch count, click state, and packet status inside the touchpad" />
+        <ListPreference android:key="soultemis_ds4_sensitivity" android:defaultValue="100" android:title="Touchpad sensitivity" android:entries="@array/soultemis_sensitivity_labels" android:entryValues="@array/soultemis_sensitivity_values" />
+        <ListPreference android:key="soultemis_ds4_opacity" android:defaultValue="100" android:title="Extra touchpad opacity" android:summary="Multiplies Artemis on-screen controller opacity" android:entries="@array/soultemis_opacity_labels" android:entryValues="@array/soultemis_opacity_values" />
+    </PreferenceCategory>
 </PreferenceScreen>

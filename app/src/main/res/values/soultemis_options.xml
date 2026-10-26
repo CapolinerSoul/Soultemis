@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="soultemis_modes"><item>DS4 (touchpad enabled)</item><item>Xbox (touchpad hidden)</item></string-array>
+    <string-array name="soultemis_mode_values"><item>ds4</item><item>xbox</item></string-array>
+    <string-array name="soultemis_sensitivity_labels"><item>50%</item><item>75%</item><item>100%</item><item>125%</item><item>150%</item></string-array>
+    <string-array name="soultemis_sensitivity_values"><item>50</item><item>75</item><item>100</item><item>125</item><item>150</item></string-array>
+    <string-array name="soultemis_opacity_labels"><item>25%</item><item>50%</item><item>75%</item><item>100% (follow HUD)</item></string-array>
+    <string-array name="soultemis_opacity_values"><item>25</item><item>50</item><item>75</item><item>100</item></string-array>
+</resources>

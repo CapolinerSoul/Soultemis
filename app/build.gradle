@@ -89,10 +89,12 @@ android {
 
     buildTypes {
         debug {
-            applicationIdSuffix ".noirdebug"
-            resValue "string", "app_label", "Diana"
-            resValue "string", "app_label_root", "Diana (Root)"
-            resValue "string", "app_label_game", "Diana (Game)"
+            // Distinct debug application ID: com.limelight.soultemis (nonRoot_game flavor).
+            // This allows installation beside the regular Artemis APK.
+            applicationIdSuffix ".soultemis"
+            resValue "string", "app_label", "Soultemis"
+            resValue "string", "app_label_root", "Soultemis (Root)"
+            resValue "string", "app_label_game", "Soultemis"
 
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
